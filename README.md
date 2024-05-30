@@ -1,6 +1,6 @@
 ## Description
 
-Express.ts api to check domain dns
+Express.ts api to check domain dns presence and validity
 
 ## Installation
 
