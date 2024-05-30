@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import prisma from "../../db";
 import { CreateDomainType } from "./domain.type";
 
@@ -6,10 +7,45 @@ import { CreateDomainType } from "./domain.type";
  * @returns The `getDomains` function is returning a list of domains fetched from the database using
  * Prisma's `findMany` method.
  */
-export const getDomains = async () => {
-  const domains = await prisma.domain.findMany();
+export const getDomains = async (query: {
+  limit?: number;
+  page?: number;
+  name?: string;
+}) => {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const offset = (page - 1) * limit;
 
-  return domains;
+  const whereClause: Prisma.DomainWhereInput = {};
+
+  if (query.name) {
+    whereClause.name = {
+      contains: query.name,
+    };
+  }
+
+  const domains = await prisma.domain.findMany({
+    where: whereClause,
+    take: limit,
+    skip: offset,
+  });
+
+  const domainsCount = await prisma.domain.count({
+    where: whereClause,
+  });
+  const totalPages = Math.ceil(domainsCount / limit);
+
+  return {
+    domains: domains,
+    meta: {
+      totalRecords: domainsCount,
+      totalPages,
+      currentPage: page,
+      perPage: limit,
+      nextPage: page < totalPages ? page + 1 : null,
+      prevPage: page > 1 ? page - 1 : null,
+    },
+  };
 };
 
 /**
